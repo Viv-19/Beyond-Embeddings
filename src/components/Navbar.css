@@ -1,0 +1,97 @@
+.navbar {
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-links {
+    display: flex;
+    list-style: none;
+    gap: 1.5rem;
+}
+
+.nav-link {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.nav-link:hover,
+.nav-link.active {
+    color: var(--accent-primary);
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.nav-logo-link {
+    display: flex;
+    align-items: center;
+}
+
+.nav-logo-img {
+    height: 60px;
+    width: auto;
+}
+
+.auth-nav-area {
+    padding-left: 2rem;
+    border-left: 1px solid var(--border-color);
+}
+
+.user-nav-status {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.nav-auth-btn {
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.nav-auth-btn.sign-in {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.nav-auth-btn.logout {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+    .nav-container {
+        flex-direction: column-reverse;
+        gap: 1rem;
+    }
+
+    .nav-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+}

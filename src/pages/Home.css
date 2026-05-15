@@ -1,0 +1,20 @@
+.home-page {
+    padding-bottom: 6rem;
+}
+
+.section-header {
+    margin-bottom: 3rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-title {
+    font-size: 2.5rem;
+    font-family: var(--font-serif);
+}
+
+.publications-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+}
