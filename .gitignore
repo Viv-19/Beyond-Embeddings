@@ -1,24 +1,49 @@
-# Logs
-logs
-*.log
+# ============================================================================
+# .gitignore — BeyondEmbeddings Full-Stack Project
+# ============================================================================
+
+# --- Dependencies ---
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# --- Build Output ---
+dist/
+dist-ssr/
+build/
+
+# --- Environment Variables (contains secrets!) ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 *.local
 
-# Editor directories and files
+# --- Backend: Uploaded Files ---
+Beyond_backend/uploads/
+
+# --- Backend: Prisma Generated Client ---
+Beyond_backend/src/generated/
+
+# --- Backend: Logs ---
+Beyond_backend/logs/
+
+# --- Editor & OS Files ---
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# --- Log Files ---
+logs/
+*.log

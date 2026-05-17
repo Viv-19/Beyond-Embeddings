@@ -55,7 +55,6 @@ const Post = () => {
     return (
         <article className="post-page container fade-in">
             <header className="post-header">
-                <Link to="/" className="back-link">← Back to publications</Link>
                 <span className="post-category">{post.category || post.type}</span>
 
                 <div className="post-title-area">
@@ -81,8 +80,6 @@ const Post = () => {
                     <span>{post.date}</span>
                     <span className="dot">•</span>
                     <span>{post.readTime}</span>
-                    <span className="dot">•</span>
-                    <span>👁 {post.views || 0} views</span>
                 </div>
             </header>
 

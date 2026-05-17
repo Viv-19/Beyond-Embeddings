@@ -22,11 +22,6 @@ const Hero = ({ post }) => {
                     <span className="read-time">{post.readTime}</span>
                 </div>
             </div>
-            {post.image && (
-                <div className="hero-image-container">
-                    <img src={post.image} alt={post.title} className="hero-image" />
-                </div>
-            )}
         </section>
     );
 };

@@ -10,23 +10,23 @@ const UserAuth = () => {
     const { login, register } = useUserAuth();
     const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
 
         if (isLogin) {
-            const success = login(formData.email, formData.password);
+            const success = await login(formData.email, formData.password);
             if (success) {
                 navigate(-1); // Return to previous page (likely Chat)
             } else {
                 setError('Invalid email or password.');
             }
         } else {
-            const success = register(formData.username, formData.email, formData.password);
+            const success = await register(formData.username, formData.email, formData.password);
             if (success) {
                 navigate(-1);
             } else {
-                setError('Email already exists.');
+                setError('Email already exists or registration failed.');
             }
         }
     };

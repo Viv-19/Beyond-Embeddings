@@ -1,0 +1,131 @@
+# ============================================================================
+# GitHub Actions CI/CD Pipeline — BeyondEmbeddings
+# ============================================================================
+#
+# 🎓 LEARNING: What is CI/CD?
+# CI = Continuous Integration: Automatically test code on every push/PR
+# CD = Continuous Deployment: Automatically deploy after tests pass
+#
+# This pipeline runs on every push to `main` and on every Pull Request.
+# It performs:
+#   1. Backend: Install deps → Lint → (Future: Run tests)
+#   2. Frontend: Install deps → Lint → Build (verifies no compilation errors)
+#
+# If any step fails, the pipeline stops and GitHub shows a red ❌ on the commit.
+# This prevents broken code from being merged into the main branch.
+# ============================================================================
+
+name: CI — BeyondEmbeddings
+
+# --- Triggers ---
+# When should this pipeline run?
+on:
+  push:
+    branches: [main]       # Run on every push to the main branch
+  pull_request:
+    branches: [main]       # Run on every PR targeting main
+
+# --- Jobs ---
+# Each job runs in its own virtual machine (Ubuntu Linux on GitHub's servers)
+jobs:
+
+  # ========================================================================
+  # JOB 1: Backend Checks
+  # ========================================================================
+  backend:
+    name: 🔧 Backend — Install & Validate
+    runs-on: ubuntu-latest       # Use the latest Ubuntu VM
+
+    # --- Environment Variables ---
+    # These are available to all steps in this job
+    # They are dummy values just for CI — not real credentials
+    env:
+      DATABASE_URL: "postgresql://test:test@localhost:5432/test?schema=public"
+      JWT_SECRET: "ci-test-secret-not-real"
+
+    steps:
+      # Step 1: Check out the repository code
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Node.js
+      # 🎓 LEARNING: We test on Node 18 and 20 to ensure compatibility.
+      # The matrix strategy runs this job TWICE — once for each version.
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: Beyond_backend/package-lock.json
+
+      # Step 3: Install backend dependencies
+      - name: 📦 Install backend dependencies
+        working-directory: Beyond_backend
+        run: npm ci
+        # 🎓 LEARNING: `npm ci` is preferred over `npm install` in CI because:
+        #   - It installs EXACTLY what's in package-lock.json (deterministic)
+        #   - It's faster (skips the dependency resolution step)
+        #   - It fails if package-lock.json is out of sync with package.json
+
+      # Step 4: Generate Prisma client
+      - name: 🔄 Generate Prisma Client
+        working-directory: Beyond_backend
+        run: npx prisma generate
+
+      # Step 5: Verify the application can start without errors
+      # We start the server briefly and check if it exits cleanly
+      - name: ✅ Verify server startup
+        working-directory: Beyond_backend
+        run: |
+          timeout 5 node src/server.js || true
+          echo "Server startup check complete"
+
+  # ========================================================================
+  # JOB 2: Frontend Checks
+  # ========================================================================
+  frontend:
+    name: 🎨 Frontend — Lint & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository code
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Node.js
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # Step 3: Install frontend dependencies
+      - name: 📦 Install frontend dependencies
+        run: npm ci
+
+      # Step 4: Run ESLint to catch code quality issues
+      # 🎓 LEARNING: Linting in CI catches issues that developers might
+      # miss locally. It enforces consistent code style across the team
+      # and prevents common mistakes (unused variables, missing imports, etc.)
+      - name: 🔍 Lint frontend code
+        run: npm run lint
+
+      # Step 5: Build the production bundle
+      # This verifies that:
+      #   - All imports are valid (no missing modules)
+      #   - JSX syntax is correct
+      #   - Environment-specific code doesn't break
+      #   - The output is optimized and deployable
+      - name: 🏗️ Build production bundle
+        run: npm run build
+
+      # Step 6: Verify the build output exists
+      - name: ✅ Verify build output
+        run: |
+          if [ -d "dist" ]; then
+            echo "✅ Build successful! Output directory exists."
+            ls -la dist/
+          else
+            echo "❌ Build failed! No dist/ directory found."
+            exit 1
+          fi

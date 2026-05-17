@@ -1,54 +1,138 @@
+// ============================================================================
+// Admin.jsx — Content Management System (CMS) Panel
+// ============================================================================
+//
+// 🎓 LEARNING: This is the admin panel where you create and manage blog content.
+//
+// PREVIOUSLY (before restructuring):
+//   - Admin credentials were HARDCODED in the frontend source code
+//   - Anyone could view-source and see the username/password
+//   - Authentication was a simple string comparison in the browser
+//   - Content was stored in localStorage (lost on browser clear)
+//
+// NOW (after restructuring):
+//   - Admin authenticates via the backend API (POST /api/auth/admin-login)
+//   - Credentials are verified against bcrypt-hashed passwords in PostgreSQL
+//   - A JWT token is returned and stored in localStorage
+//   - Content is created via API calls and persisted in the database
+//   - Even if someone inspects the frontend code, they can't log in
+//     without valid credentials in the database
+// ============================================================================
+
 import React, { useState, useEffect } from 'react';
 import { useContent } from '../context/ContentContext';
 import { Plus, Trash2, BookOpen, FileText, FlaskConical, ScrollText, Lock, LogOut, Code, FileDown, MessageCircle } from 'lucide-react';
 import './Admin.css';
 
-// SIMPLE AUTH CONFIG
-const ADMIN_CREDENTIALS = {
-    username: 'vivesh',
-    password: 'researchblog2026'
-};
-
 const Admin = () => {
     const { content, addEntry, deleteEntry } = useContent();
+
+    // --- Authentication State ---
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+    const [loginForm, setLoginForm] = useState({ email: '', password: '' });
     const [loginError, setLoginError] = useState('');
 
+    // --- CMS State ---
     const [activeTab, setActiveTab] = useState('blogs');
     const [isAdding, setIsAdding] = useState(false);
 
+    // --- Form State for creating new posts ---
     const [formData, setFormData] = useState({
         title: '', subtitle: '', category: '', image: '', excerpt: '', readTime: '', slug: '',
         body: '', repoLink: '', pdfUrl: ''
     });
 
+    // ========================================================================
+    // On mount: Check if admin is already authenticated
+    // ========================================================================
+    // 🎓 LEARNING: We check for an existing admin token in localStorage.
+    // If found, we verify it's still valid by calling the /me endpoint.
+    // This allows the admin to stay logged in across page refreshes.
+    // ========================================================================
     useEffect(() => {
-        const auth = sessionStorage.getItem('is_admin_authenticated');
-        if (auth === 'true') setIsAuthenticated(true);
+        const token = localStorage.getItem('be_admin_token');
+        if (token) {
+            // Verify the token is still valid
+            fetch('/api/auth/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+                .then(res => {
+                    if (res.ok) return res.json();
+                    throw new Error('Token invalid');
+                })
+                .then(data => {
+                    // Only allow admin role
+                    if (data.data.user.role === 'admin') {
+                        setIsAuthenticated(true);
+                    } else {
+                        localStorage.removeItem('be_admin_token');
+                    }
+                })
+                .catch(() => {
+                    localStorage.removeItem('be_admin_token');
+                });
+        }
     }, []);
 
-    const handleLogin = (e) => {
+    // ========================================================================
+    // handleLogin — Authenticates admin via the backend API
+    // ========================================================================
+    // 🎓 LEARNING: We call POST /api/auth/admin-login instead of the regular
+    // login endpoint. The backend checks BOTH the password AND the role.
+    // Even if someone has a valid reader account, they can't access the CMS.
+    // ========================================================================
+    const handleLogin = async (e) => {
         e.preventDefault();
-        if (loginForm.username === ADMIN_CREDENTIALS.username && loginForm.password === ADMIN_CREDENTIALS.password) {
-            setIsAuthenticated(true);
-            sessionStorage.setItem('is_admin_authenticated', 'true');
-            setLoginError('');
-        } else {
-            setLoginError('Invalid credentials.');
+        setLoginError('');
+
+        try {
+            const res = await fetch('/api/auth/admin-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: loginForm.email,
+                    password: loginForm.password
+                })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                // Store the admin token separately from the user token
+                localStorage.setItem('be_admin_token', data.data.token);
+                setIsAuthenticated(true);
+                setLoginError('');
+            } else {
+                setLoginError(data.message || 'Invalid credentials.');
+            }
+        } catch (error) {
+            setLoginError('Server error. Is the backend running?');
         }
     };
 
+    // ========================================================================
+    // handleLogout — Clears admin session
+    // ========================================================================
     const handleLogout = () => {
         setIsAuthenticated(false);
-        sessionStorage.removeItem('is_admin_authenticated');
+        localStorage.removeItem('be_admin_token');
     };
 
+    // ========================================================================
+    // handleInputChange — Updates form state as the admin types
+    // ========================================================================
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    // ========================================================================
+    // handleSubmit — Creates a new post via the content context
+    // ========================================================================
+    // 🎓 LEARNING: The addEntry function in ContentContext handles the API call.
+    // We just pass the type and data, and the context handles authentication
+    // (sending the JWT token) and re-fetching the updated content.
+    // ========================================================================
     const handleSubmit = (e) => {
         e.preventDefault();
         addEntry(activeTab, {
@@ -59,6 +143,9 @@ const Admin = () => {
         setFormData({ title: '', subtitle: '', category: '', image: '', excerpt: '', readTime: '', slug: '', body: '', repoLink: '', pdfUrl: '' });
     };
 
+    // ========================================================================
+    // RENDER: Login Screen (if not authenticated)
+    // ========================================================================
     if (!isAuthenticated) {
         return (
             <div className="admin-login-page container fade-in">
@@ -66,8 +153,8 @@ const Admin = () => {
                     <h1>Admin Access</h1>
                     <form onSubmit={handleLogin} className="login-form">
                         <div className="form-group">
-                            <label>Username</label>
-                            <input type="text" value={loginForm.username} onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })} required />
+                            <label>Email</label>
+                            <input type="email" value={loginForm.email} onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })} required />
                         </div>
                         <div className="form-group">
                             <label>Password</label>
@@ -81,6 +168,9 @@ const Admin = () => {
         );
     }
 
+    // ========================================================================
+    // RENDER: CMS Dashboard (if authenticated)
+    // ========================================================================
     const tabs = [
         { id: 'blogs', name: 'Blogs', icon: <BookOpen size={18} /> },
         { id: 'notes', name: 'Chat', icon: <MessageCircle size={18} /> },
@@ -173,7 +263,7 @@ const Admin = () => {
                     {content[activeTab].map(item => (
                         <div key={item.id} className="admin-item">
                             <div className="item-info">
-                                <h3>{item.title || item.body.slice(0, 50) + '...'}</h3>
+                                <h3>{item.title || item.body?.slice(0, 50) + '...'}</h3>
                                 <p className="text-small text-muted">{item.date}</p>
                             </div>
                             <button className="delete-btn" onClick={() => deleteEntry(activeTab, item.id)}>

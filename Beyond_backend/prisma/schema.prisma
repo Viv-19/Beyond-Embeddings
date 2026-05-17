@@ -1,0 +1,111 @@
+// ============================================================================
+// schema.prisma — Database Schema for BeyondEmbeddings
+// ============================================================================
+//
+// 🎓 LEARNING: This file defines the shape of your PostgreSQL database.
+// Prisma reads this file and generates:
+//   1. A type-safe JavaScript client (so you can do `prisma.user.create(...)`)
+//   2. SQL migration files (so your DB tables match this schema exactly)
+//
+// Every time you change this file, run:
+//   npx prisma migrate dev --name describe_your_change
+//
+// This will create a new migration AND regenerate the Prisma client.
+// ============================================================================
+
+// --- Generator: tells Prisma what kind of client code to produce ---
+generator client {
+  provider = "prisma-client-js"
+}
+
+// --- Datasource: tells Prisma which database engine and connection string to use ---
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// USER MODEL
+// ============================================================================
+// Represents a registered reader/commenter on the blog.
+// Users can sign up, log in, and leave comments on posts.
+//
+// 🎓 LEARNING: The `@id @default(uuid())` combination means:
+//   - This field is the primary key (@id)
+//   - It auto-generates a UUID string when a new row is created (@default(uuid()))
+//   UUIDs are preferred over auto-incrementing integers because they are:
+//   - Globally unique (safe for distributed systems)
+//   - Non-guessable (better security than /user/1, /user/2, etc.)
+// ============================================================================
+model User {
+  id            String    @id @default(uuid())
+  username      String                          // Display name shown on comments
+  email         String    @unique               // Login identifier — must be unique
+  password_hash String                          // bcrypt-hashed password (NEVER store plaintext!)
+  role          String    @default("reader")    // "reader" or "admin" — controls CMS access
+  created_at    DateTime  @default(now())       // Auto-set to current timestamp on creation
+
+  // --- Relationships ---
+  // A User can write many Comments (1-to-many)
+  comments      Comment[]
+}
+
+// ============================================================================
+// POST MODEL
+// ============================================================================
+// Represents a single piece of content: a blog article, experiment,
+// research paper reference, or chat/note message.
+//
+// 🎓 LEARNING: The `type` field acts as a discriminator.
+// Instead of creating 4 separate tables (blogs, experiments, papers, notes),
+// we use ONE table with a `type` column. This is called "Single Table Inheritance"
+// and it keeps our queries simple while supporting multiple content types.
+// ============================================================================
+model Post {
+  id        String   @id @default(uuid())
+  type      String   @default("blogs")         // "blogs", "experiments", "papers", or "notes"
+  title     String?                             // Title of the post (null for chat/notes)
+  slug      String?  @unique                    // URL-friendly identifier (e.g. "my-first-post")
+  subtitle  String?                             // Optional subtitle for blog posts
+  excerpt   String?                             // Short preview shown on cards
+  body      String?                             // Full markdown content of the post
+  image     String?                             // Thumbnail/hero image URL or path
+  category  String?                             // Freeform tag (e.g. "Research", "Tutorial")
+  readTime  String?                             // Human-readable read time (e.g. "5 min read")
+  repoLink  String?                             // GitHub repository link (for experiments)
+  pdfUrl    String?                             // PDF download link (for papers)
+  views     Int      @default(0)               // View counter — incremented on each page visit
+  likes     Int      @default(0)               // Like counter — incremented when users heart a post
+  
+  created_at DateTime @default(now())           // When this post was first published
+
+  // --- Relationships ---
+  // A Post can have many Comments (1-to-many)
+  comments   Comment[]
+}
+
+// ============================================================================
+// COMMENT MODEL
+// ============================================================================
+// Represents a user comment on a post. Linked to both the User who wrote it
+// and the Post it belongs to.
+//
+// 🎓 LEARNING: The `onDelete: Cascade` option means:
+//   - If a Post is deleted, ALL its comments are automatically deleted too.
+//   - If a User is deleted, ALL their comments are automatically deleted too.
+// This prevents orphaned rows (comments pointing to non-existent posts/users).
+// ============================================================================
+model Comment {
+  id        String   @id @default(uuid())
+  text      String                              // The comment body
+  
+  // --- Foreign Keys ---
+  // Each comment belongs to exactly ONE user and ONE post
+  user_id   String
+  user      User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  
+  post_id   String
+  post      Post     @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  
+  created_at DateTime @default(now())
+}

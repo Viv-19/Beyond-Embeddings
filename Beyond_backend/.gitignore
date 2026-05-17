@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Environment variables (contains secrets — NEVER commit!)
+.env
+
+# Prisma generated client (regenerated on npm install)
+/src/generated/prisma
+
+# Uploaded files (user content, not source code)
+uploads/
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

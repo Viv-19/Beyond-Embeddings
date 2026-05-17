@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Linkedin } from 'lucide-react';
+import { Mail, Linkedin, Github } from 'lucide-react';
 import './Footer.css';
 
 const Footer = () => {
@@ -23,6 +23,10 @@ const Footer = () => {
                         <a href="https://linkedin.com/in/vivesh-kumar-singh-a78048302" target="_blank" rel="noopener noreferrer" title="LinkedIn">
                             <Linkedin size={18} />
                             <span>LinkedIn</span>
+                        </a>
+                        <a href="https://github.com/Viv-19" target="_blank" rel="noopener noreferrer" title="GitHub">
+                            <Github size={18} />
+                            <span>GitHub</span>
                         </a>
                     </div>
                     <div className="legal-links">
