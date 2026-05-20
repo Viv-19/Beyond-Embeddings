@@ -76,6 +76,7 @@ model Post {
   pdfUrl    String?                             // PDF download link (for papers)
   views     Int      @default(0)               // View counter — incremented on each page visit
   likes     Int      @default(0)               // Like counter — incremented when users heart a post
+  dislikes  Int      @default(0)               // Dislike counter — incremented when users dislike a post
   
   created_at DateTime @default(now())           // When this post was first published
 
@@ -107,5 +108,10 @@ model Comment {
   post_id   String
   post      Post     @relation(fields: [post_id], references: [id], onDelete: Cascade)
   
+  // --- Self-referencing relationship for replies ---
+  parent_id String?
+  parent    Comment?  @relation("CommentReplies", fields: [parent_id], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentReplies")
+
   created_at DateTime @default(now())
 }

@@ -3,8 +3,9 @@ import { useContent } from '../context/ContentContext';
 import ArticleCard from '../components/ArticleCard';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
+import remarkGfm from 'remark-gfm';
 import rehypeKatex from 'rehype-katex';
-import { Share2, MessageCircle, Heart, MoreHorizontal, Link as LinkIcon, Send } from 'lucide-react';
+import { Share2, MessageCircle, Heart, MoreHorizontal, Link as LinkIcon, Send, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUserAuth } from '../context/UserAuthContext';
 import './About.css';
@@ -76,7 +77,7 @@ const ContentSection = ({ title, type, description }) => {
             </p>
 
             {items.length === 0 ? (
-                <div style={{ padding: '4rem', border: '1px solid var(--border-color)', borderRadius: '4px', textAlign: 'center', backgroundColor: 'var(--bg-secondary)' }}>
+                <div className="empty-state">
                     <p className="text-muted">No {title.toLowerCase()} published yet. Coming soon.</p>
                 </div>
             ) : (
@@ -96,7 +97,9 @@ export const Notes = () => {
     const navigate = useNavigate();
     const [showShareMenu, setShowShareMenu] = useState(null);
     const [activeCommentBox, setActiveCommentBox] = useState(null);
+    const [activeReplyBox, setActiveReplyBox] = useState(null);
     const [comment, setComment] = useState('');
+    const [replyText, setReplyText] = useState('');
     const items = content.notes || [];
 
     const handleCopyLink = (id) => {
@@ -115,12 +118,31 @@ export const Notes = () => {
         setComment('');
     };
 
+    const handlePostReply = (postId, parentId) => {
+        if (!user) {
+            navigate('/login');
+            return;
+        }
+        if (!replyText.trim()) return;
+        addComment('notes', postId, replyText, user.username, parentId);
+        setReplyText('');
+        setActiveReplyBox(null);
+    };
+
     const handleLike = (postId) => {
         if (!user) {
             navigate('/login');
             return;
         }
         incrementMetric('notes', postId, 'likes');
+    };
+
+    const handleDislike = (postId) => {
+        if (!user) {
+            navigate('/login');
+            return;
+        }
+        incrementMetric('notes', postId, 'dislikes');
     };
 
     return (
@@ -162,7 +184,7 @@ export const Notes = () => {
                             </div>
 
                             <div className="note-body-instagram">
-                                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                <ReactMarkdown remarkPlugins={[remarkMath, remarkGfm]} rehypePlugins={[rehypeKatex]}>
                                     {item.body}
                                 </ReactMarkdown>
                             </div>
@@ -174,8 +196,15 @@ export const Notes = () => {
                                             className={`substack-action-btn ${item.likes > 0 ? 'liked' : ''}`}
                                             onClick={() => handleLike(item.id)}
                                         >
-                                            <Heart size={20} fill={item.likes > 0 ? "var(--accent-primary)" : "none"} />
+                                            <ThumbsUp size={20} fill={item.likes > 0 ? "var(--accent-primary)" : "none"} />
                                             <span>{item.likes || 0}</span>
+                                        </button>
+                                        <button
+                                            className={`substack-action-btn ${item.dislikes > 0 ? 'disliked' : ''}`}
+                                            onClick={() => handleDislike(item.id)}
+                                        >
+                                            <ThumbsDown size={20} fill={item.dislikes > 0 ? "#ff4d4f" : "none"} />
+                                            <span>{item.dislikes || 0}</span>
                                         </button>
                                         <button
                                             className="substack-action-btn"
@@ -184,7 +213,7 @@ export const Notes = () => {
                                             <MessageCircle size={20} />
                                             <span>{item.comments ? item.comments.length : 0}</span>
                                         </button>
-                                        <button className="substack-action-btn">
+                                        <button className="substack-action-btn" onClick={() => handleCopyLink(item.id)}>
                                             <Share2 size={20} />
                                         </button>
                                     </div>
@@ -192,17 +221,77 @@ export const Notes = () => {
 
                                 <div className="note-stats-instagram">
                                     <span className="likes-count">{item.likes || 0} likes</span>
+                                    <span className="dot-separator">•</span>
+                                    <span className="likes-count">{item.dislikes || 0} dislikes</span>
                                 </div>
 
                                 {/* Comments Display */}
                                 {item.comments && item.comments.length > 0 && (
                                     <div className="comments-list-instagram">
-                                        {item.comments.map(c => (
-                                            <div key={c.id} className="comment-item-instagram">
-                                                <span className="comment-author">{c.author || 'Researcher'}: </span>
-                                                <span className="comment-text">{c.text}</span>
-                                            </div>
-                                        ))}
+                                        {item.comments.filter(c => !c.parent_id).map(c => {
+                                            const replies = item.comments.filter(r => r.parent_id === c.id);
+                                            return (
+                                                <div key={c.id} className="comment-thread-container">
+                                                    <div className="comment-item-instagram parent-comment">
+                                                        <div className="comment-text-group">
+                                                            <span className="comment-author">
+                                                                {c.author || 'Researcher'}
+                                                                {c.role === 'admin' && <span className="admin-badge-inline">Author</span>}:
+                                                            </span>
+                                                            <span className="comment-text">{c.text}</span>
+                                                        </div>
+                                                        
+                                                        {/* Inline Reply Trigger for Admin */}
+                                                        {user && user.role === 'admin' && (
+                                                            <button 
+                                                                className="reply-trigger-btn"
+                                                                onClick={() => {
+                                                                    setActiveReplyBox(activeReplyBox === c.id ? null : c.id);
+                                                                    setReplyText('');
+                                                                }}
+                                                            >
+                                                                Reply
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Indented Replies */}
+                                                    {replies.length > 0 && (
+                                                        <div className="replies-list-indented">
+                                                            {replies.map(r => (
+                                                                <div key={r.id} className="comment-item-instagram reply-comment">
+                                                                    <span className="comment-author reply-author">
+                                                                        {r.author || 'Researcher'}
+                                                                        {r.role === 'admin' && <span className="admin-badge-inline">Author</span>}:
+                                                                    </span>
+                                                                    <span className="comment-text">{r.text}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Inline Reply Form for Admin */}
+                                                    {activeReplyBox === c.id && (
+                                                        <div className="reply-input-area fade-in">
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Write a reply..."
+                                                                value={replyText}
+                                                                onChange={(e) => setReplyText(e.target.value)}
+                                                                onKeyPress={(e) => e.key === 'Enter' && handlePostReply(item.id, c.id)}
+                                                            />
+                                                            <button
+                                                                className="post-reply-btn"
+                                                                disabled={!replyText.trim()}
+                                                                onClick={() => handlePostReply(item.id, c.id)}
+                                                            >
+                                                                Reply
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
 

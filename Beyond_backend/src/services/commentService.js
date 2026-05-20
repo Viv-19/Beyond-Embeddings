@@ -26,23 +26,24 @@ const prisma = require('../config/db');
 // This is called "response enrichment" — returning more data than strictly
 // necessary to reduce the number of round-trips between client and server.
 // ============================================================================
-async function addComment(postId, userId, text) {
+async function addComment(postId, userId, text, parentId = null) {
     // Verify the post exists before creating a comment
     const post = await prisma.post.findUnique({ where: { id: postId } });
     if (!post) {
         throw new Error('Post not found.');
     }
 
-    // Create the comment and include the author's username in the response
+    // Create the comment and include the author's username and role in the response
     const comment = await prisma.comment.create({
         data: {
             text,
             user_id: userId,
-            post_id: postId
+            post_id: postId,
+            parent_id: parentId || null
         },
         include: {
             user: {
-                select: { username: true }  // Only return username, not sensitive data
+                select: { username: true, role: true }  // Return username and role
             }
         }
     });
@@ -61,7 +62,7 @@ async function getCommentsByPost(postId) {
         where: { post_id: postId },
         include: {
             user: {
-                select: { username: true }
+                select: { username: true, role: true }
             }
         },
         orderBy: { created_at: 'asc' }  // Chronological order

@@ -20,6 +20,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 
 // --- Initialize the Express application ---
 const app = express();
@@ -43,7 +44,10 @@ app.use(helmet());
 //    Without CORS, the browser would block all cross-origin requests.
 //    🎓 LEARNING: In production, you'd restrict this to your specific domain:
 //    app.use(cors({ origin: 'https://beyondembeddings.com' }))
-app.use(cors());
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    credentials: true
+}));
 
 // 3. Morgan: HTTP request logger — prints each incoming request to the console.
 //    The 'dev' format shows: :method :url :status :response-time ms
@@ -52,15 +56,25 @@ app.use(cors());
 //    format and pipe to a log file instead of console.
 app.use(morgan('dev'));
 
-// 4. JSON Body Parser: Parses incoming JSON request bodies and makes them
+// 4. Rate Limiting: Prevent brute-force attacks and spam
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { status: 'error', message: 'Too many requests, please try again later.' }
+});
+app.use('/api', limiter);
+
+// 5. JSON Body Parser: Parses incoming JSON request bodies and makes them
 //    available as `req.body`. Without this, `req.body` would be `undefined`.
 app.use(express.json());
 
-// 5. URL-Encoded Body Parser: Parses form submissions (application/x-www-form-urlencoded)
+// 6. URL-Encoded Body Parser: Parses form submissions (application/x-www-form-urlencoded)
 //    `extended: true` allows nested objects in form data.
 app.use(express.urlencoded({ extended: true }));
 
-// 6. Static File Serving: Serve uploaded images from the /uploads directory
+// 7. Static File Serving: Serve uploaded images from the /uploads directory
 //    🎓 LEARNING: express.static() serves files directly without going through
 //    any route handler. A request for /uploads/photo.jpg will serve the file at
 //    Beyond_backend/uploads/photo.jpg automatically.
@@ -117,9 +131,24 @@ app.get('/health', (req, res) => {
 app.use((err, req, res, next) => {
     console.error('❌ Server Error:', err.stack);
 
+    // Handle Prisma Specific Errors
+    if (err.code === 'P2002') {
+        return res.status(400).json({
+            status: 'error',
+            message: `A unique constraint failed on the field: ${err.meta?.target?.join(', ')}`
+        });
+    }
+
+    if (err.code === 'P2025') {
+        return res.status(404).json({
+            status: 'error',
+            message: 'Record to update or delete not found.'
+        });
+    }
+
     res.status(500).json({
         status: 'error',
-        message: 'Something went wrong on the server!'
+        message: err.message || 'Something went wrong on the server!'
     });
 });
 

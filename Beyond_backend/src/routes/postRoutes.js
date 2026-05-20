@@ -50,6 +50,9 @@ router.patch('/:id/views', postController.incrementViews);
 //   3. It encourages users to create accounts
 router.patch('/:id/likes', protect, postController.incrementLikes);
 
+// PATCH /api/posts/:id/dislikes — Increment dislike count (must be logged in)
+router.patch('/:id/dislikes', protect, postController.incrementDislikes);
+
 // ============================================================================
 // ADMIN ROUTES — JWT token + admin role required
 // ============================================================================
@@ -58,6 +61,9 @@ router.patch('/:id/likes', protect, postController.incrementLikes);
 
 // POST /api/posts — Create a new post
 router.post('/', protect, adminOnly, postController.createPost);
+
+// PUT /api/posts/:id — Update a post
+router.put('/:id', protect, adminOnly, postController.updatePost);
 
 // DELETE /api/posts/:id — Delete a post
 router.delete('/:id', protect, adminOnly, postController.removePost);

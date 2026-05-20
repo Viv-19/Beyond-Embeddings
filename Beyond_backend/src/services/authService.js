@@ -74,7 +74,7 @@ async function registerUser(username, email, password) {
     const token = jwt.sign(
         { userId: user.id, role: user.role },
         JWT_SECRET,
-        { expiresIn: '7d' } // Token expires in 7 days
+        { expiresIn: '1d' } // Token expires in 1 day
     );
 
     // 5. Return user data (without the password hash!) and the token
@@ -126,7 +126,7 @@ async function loginUser(email, password) {
     const token = jwt.sign(
         { userId: user.id, role: user.role },
         JWT_SECRET,
-        { expiresIn: '7d' }
+        { expiresIn: '1d' }
     );
 
     // 4. Return user data and token

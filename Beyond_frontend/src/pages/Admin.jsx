@@ -21,11 +21,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { useContent } from '../context/ContentContext';
-import { Plus, Trash2, BookOpen, FileText, FlaskConical, ScrollText, Lock, LogOut, Code, FileDown, MessageCircle } from 'lucide-react';
+import { Plus, Trash2, BookOpen, FileText, FlaskConical, ScrollText, Lock, LogOut, Code, FileDown, MessageCircle, Edit, Eye, Edit2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+
+// ...existing imports remain unchanged
+
+// In ReactMarkdown component add remarkPlugins={[remarkMath, remarkGfm]}
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import './Admin.css';
 
 const Admin = () => {
-    const { content, addEntry, deleteEntry } = useContent();
+    const { content, addEntry, updateEntry, deleteEntry } = useContent();
 
     // --- Authentication State ---
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -35,6 +45,8 @@ const Admin = () => {
     // --- CMS State ---
     const [activeTab, setActiveTab] = useState('blogs');
     const [isAdding, setIsAdding] = useState(false);
+    const [editingItem, setEditingItem] = useState(null);
+    const [showPreview, setShowPreview] = useState(false);
 
     // --- Form State for creating new posts ---
     const [formData, setFormData] = useState({
@@ -43,36 +55,11 @@ const Admin = () => {
     });
 
     // ========================================================================
-    // On mount: Check if admin is already authenticated
+    // On mount: Enforce manual login
     // ========================================================================
-    // 🎓 LEARNING: We check for an existing admin token in localStorage.
-    // If found, we verify it's still valid by calling the /me endpoint.
-    // This allows the admin to stay logged in across page refreshes.
+    // We do NOT auto-login the admin from storage on mount.
+    // The admin must ALWAYS enter their email and password to log in.
     // ========================================================================
-    useEffect(() => {
-        const token = localStorage.getItem('be_admin_token');
-        if (token) {
-            // Verify the token is still valid
-            fetch('/api/auth/me', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
-                .then(res => {
-                    if (res.ok) return res.json();
-                    throw new Error('Token invalid');
-                })
-                .then(data => {
-                    // Only allow admin role
-                    if (data.data.user.role === 'admin') {
-                        setIsAuthenticated(true);
-                    } else {
-                        localStorage.removeItem('be_admin_token');
-                    }
-                })
-                .catch(() => {
-                    localStorage.removeItem('be_admin_token');
-                });
-        }
-    }, []);
 
     // ========================================================================
     // handleLogin — Authenticates admin via the backend API
@@ -86,7 +73,8 @@ const Admin = () => {
         setLoginError('');
 
         try {
-            const res = await fetch('/api/auth/admin-login', {
+            const API_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api';
+            const res = await fetch(`${API_BASE}/auth/admin-login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -98,15 +86,18 @@ const Admin = () => {
             const data = await res.json();
 
             if (res.ok) {
-                // Store the admin token separately from the user token
-                localStorage.setItem('be_admin_token', data.data.token);
+                // Store the admin token separately in sessionStorage so it clears on tab/browser close
+                sessionStorage.setItem('be_admin_token', data.data.token);
                 setIsAuthenticated(true);
                 setLoginError('');
+                toast.success('Successfully logged in as Admin');
             } else {
                 setLoginError(data.message || 'Invalid credentials.');
+                toast.error(data.message || 'Invalid credentials');
             }
         } catch (error) {
             setLoginError('Server error. Is the backend running?');
+            toast.error('Server error. Is the backend running?');
         }
     };
 
@@ -115,7 +106,7 @@ const Admin = () => {
     // ========================================================================
     const handleLogout = () => {
         setIsAuthenticated(false);
-        localStorage.removeItem('be_admin_token');
+        sessionStorage.removeItem('be_admin_token');
     };
 
     // ========================================================================
@@ -126,6 +117,17 @@ const Admin = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+// Helper to convert standard Google Drive file share links to direct raw image CDN urls
+const convertGoogleDriveLink = (url) => {
+    if (!url || typeof url !== 'string') return url;
+    const driveRegex = /(?:https?:\/\/)?(?:drive|docs)\.google\.com\/(?:file\/d\/|open\?id=)([^/\s?#]+)/;
+    const match = url.match(driveRegex);
+    if (match && match[1]) {
+        return `https://lh3.googleusercontent.com/u/0/d/${match[1]}`;
+    }
+    return url;
+};
+
     // ========================================================================
     // handleSubmit — Creates a new post via the content context
     // ========================================================================
@@ -135,11 +137,46 @@ const Admin = () => {
     // ========================================================================
     const handleSubmit = (e) => {
         e.preventDefault();
-        addEntry(activeTab, {
+        
+        // Convert Google Drive link to direct raw CDN image link
+        const processedImage = convertGoogleDriveLink(formData.image);
+        
+        const postPayload = {
             ...formData,
+            image: processedImage,
             id: formData.slug || Date.now().toString()
-        });
+        };
+
+        if (editingItem) {
+            updateEntry(activeTab, editingItem.id, postPayload);
+            setEditingItem(null);
+        } else {
+            addEntry(activeTab, postPayload);
+        }
         setIsAdding(false);
+        setFormData({ title: '', subtitle: '', category: '', image: '', excerpt: '', readTime: '', slug: '', body: '', repoLink: '', pdfUrl: '' });
+    };
+
+    const handleStartEdit = (item) => {
+        setEditingItem(item);
+        setFormData({
+            title: item.title || '',
+            subtitle: item.subtitle || '',
+            category: item.category || '',
+            image: item.image || '',
+            excerpt: item.excerpt || '',
+            readTime: item.readTime || '',
+            slug: item.slug || item.id || '',
+            body: item.body || '',
+            repoLink: item.repoLink || '',
+            pdfUrl: item.pdfUrl || ''
+        });
+        setIsAdding(true);
+    };
+
+    const handleCancel = () => {
+        setIsAdding(false);
+        setEditingItem(null);
         setFormData({ title: '', subtitle: '', category: '', image: '', excerpt: '', readTime: '', slug: '', body: '', repoLink: '', pdfUrl: '' });
     };
 
@@ -217,8 +254,14 @@ const Admin = () => {
                                         <input name="slug" value={formData.slug} onChange={handleInputChange} required />
                                     </div>
                                     <div className="form-group">
-                                        <label>Thumbnail Image URL</label>
-                                        <input name="image" value={formData.image} onChange={handleInputChange} placeholder="/assets/..." />
+                                        <label className="flex-label">
+                                            Thumbnail Image URL 
+                                            <a href="https://drive.google.com" target="_blank" rel="noopener noreferrer" className="drive-link" title="Upload to Google Drive and paste the shareable link here">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14l8-12 8 12M12 2v20m-8-8h16"/></svg>
+                                                Open Drive
+                                            </a>
+                                        </label>
+                                        <input name="image" value={formData.image} onChange={handleInputChange} placeholder="Paste Google Drive shareable link here..." />
                                     </div>
                                     <div className="form-group">
                                         <label>Read Time</label>
@@ -242,8 +285,35 @@ const Admin = () => {
                                     <textarea name="excerpt" value={formData.excerpt} onChange={handleInputChange} rows="2" />
                                 </div>
                                 <div className="form-group">
-                                    <label>Blog Content (Markdown)</label>
-                                    <textarea name="body" value={formData.body} onChange={handleInputChange} rows="15" className="body-editor" placeholder="Paste your markdown content here... (Standard Medium format works)" />
+                                    <div className="flex-label">
+                                        <label>Blog Content (Markdown)</label>
+                                        <button 
+                                            type="button" 
+                                            className="preview-toggle-btn" 
+                                            onClick={() => setShowPreview(!showPreview)}
+                                        >
+                                            {showPreview ? <><Edit2 size={14} /> Edit</> : <><Eye size={14} /> Preview</>}
+                                        </button>
+                                    </div>
+                                    {showPreview ? (
+                                        <div className="markdown-preview-container">
+                                            <ReactMarkdown 
+                                                remarkPlugins={[remarkMath, remarkGfm]} 
+                                                rehypePlugins={[rehypeKatex]}
+                                            >
+                                                {formData.body || '*No content yet...*'}
+                                            </ReactMarkdown>
+                                        </div>
+                                    ) : (
+                                        <textarea 
+                                            name="body" 
+                                            value={formData.body} 
+                                            onChange={handleInputChange} 
+                                            rows="15" 
+                                            className="body-editor" 
+                                            placeholder="Paste your markdown content here... (Standard Medium format works)" 
+                                        />
+                                    )}
                                 </div>
                             </>
                         ) : (
@@ -253,8 +323,8 @@ const Admin = () => {
                             </div>
                         )}
                         <div className="form-actions">
-                            <button type="button" className="cancel-btn" onClick={() => setIsAdding(false)}>Cancel</button>
-                            <button type="submit" className="submit-btn">Publish {activeTab.slice(0, -1)}</button>
+                            <button type="button" className="cancel-btn" onClick={handleCancel}>Cancel</button>
+                            <button type="submit" className="submit-btn">{editingItem ? 'Save Changes' : `Publish ${activeTab.slice(0, -1)}`}</button>
                         </div>
                     </form>
                 )}
@@ -266,9 +336,14 @@ const Admin = () => {
                                 <h3>{item.title || item.body?.slice(0, 50) + '...'}</h3>
                                 <p className="text-small text-muted">{item.date}</p>
                             </div>
-                            <button className="delete-btn" onClick={() => deleteEntry(activeTab, item.id)}>
-                                <Trash2 size={16} />
-                            </button>
+                            <div className="item-actions">
+                                <button className="edit-btn-inline" onClick={() => handleStartEdit(item)}>
+                                    <Edit size={16} />
+                                </button>
+                                <button className="delete-btn" onClick={() => deleteEntry(activeTab, item.id)}>
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
                         </div>
                     ))}
                 </div>

@@ -203,11 +203,53 @@ async function incrementLikes(req, res, next) {
     }
 }
 
+// ============================================================================
+// PATCH /api/posts/:id/dislikes — Increment the dislike count
+// ============================================================================
+// Called when a user clicks the dislike button.
+// Requires authentication (you must be logged in to dislike a post).
+// ============================================================================
+async function incrementDislikes(req, res, next) {
+    try {
+        const { id } = req.params;
+        const updated = await postService.incrementMetric(id, 'dislikes');
+
+        res.status(200).json({
+            status: 'success',
+            data: { dislikes: updated.dislikes }
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+// ============================================================================
+// PUT /api/posts/:id — Update a post (admin only)
+// ============================================================================
+async function updatePost(req, res, next) {
+    try {
+        const { id } = req.params;
+        const postData = req.body;
+
+        const post = await postService.updatePost(id, postData);
+
+        res.status(200).json({
+            status: 'success',
+            message: 'Post updated successfully!',
+            data: post
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
 module.exports = {
     listPosts,
     getPost,
     createPost,
     removePost,
     incrementViews,
-    incrementLikes
+    incrementLikes,
+    incrementDislikes,
+    updatePost
 };

@@ -49,16 +49,25 @@
     display: flex;
     gap: 1.5rem;
     font-size: 0.8rem;
-    opacity: 0.6;
+    color: var(--text-secondary);
+}
+
+.legal-links a {
+    transition: color 0.2s ease;
+}
+
+.legal-links a:hover {
+    color: var(--accent-primary);
 }
 
 .admin-link {
     font-weight: 600;
-    opacity: 0.4;
+    color: var(--text-secondary);
+    transition: color 0.2s ease;
 }
 
 .admin-link:hover {
-    opacity: 1;
+    color: var(--accent-primary) !important;
 }
 
 @media (max-width: 640px) {

@@ -109,3 +109,124 @@
     border-radius: 4px;
     cursor: pointer;
 }
+
+/* Threaded replies and reaction styling */
+.substack-action-btn.disliked {
+    color: #ff4d4f;
+}
+
+.dot-separator {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    user-select: none;
+}
+
+.note-stats-instagram {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.comment-thread-container {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(229, 62, 62, 0.1);
+}
+
+.comment-thread-container:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.parent-comment {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.comment-text-group {
+    flex: 1;
+    line-height: 1.5;
+}
+
+.admin-badge-inline {
+    background: var(--accent-primary);
+    color: white;
+    font-size: 0.7rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 10px;
+    margin-left: 0.35rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    vertical-align: middle;
+    display: inline-block;
+}
+
+.reply-trigger-btn {
+    background: none;
+    border: none;
+    color: var(--accent-primary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.reply-trigger-btn:hover {
+    background-color: rgba(229, 62, 62, 0.08);
+}
+
+.replies-list-indented {
+    margin-left: 2.5rem;
+    margin-top: 0.75rem;
+    padding-left: 0.75rem;
+    border-left: 2px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.reply-comment {
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.reply-input-area {
+    margin-left: 2.5rem;
+    margin-top: 0.75rem;
+    display: flex;
+    gap: 0.75rem;
+}
+
+.reply-input-area input {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.post-reply-btn {
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.post-reply-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

@@ -22,6 +22,30 @@
     align-items: flex-start;
 }
 
+.flex-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.drive-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    color: var(--accent-primary);
+    text-decoration: none;
+    font-family: var(--font-sans);
+}
+.drive-link svg {
+    width: 14px;
+    height: 14px;
+}
+.drive-link:hover {
+    text-decoration: underline;
+}
+
 .logout-btn {
     display: flex;
     align-items: center;
@@ -136,6 +160,80 @@
     cursor: pointer;
 }
 
+.delete-btn {
+    background-color: transparent;
+    border: none;
+    color: #dc3545;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.delete-btn:hover {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.preview-toggle-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+    font-family: var(--font-sans);
+}
+.preview-toggle-btn:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.markdown-preview-container {
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-secondary);
+    min-height: 250px;
+    max-height: 500px;
+    overflow-y: auto;
+    font-family: var(--font-sans);
+    line-height: 1.6;
+}
+
+.markdown-preview-container h1,
+.markdown-preview-container h2,
+.markdown-preview-container h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.markdown-preview-container p {
+    margin-bottom: 1rem;
+}
+
+.markdown-preview-container code {
+    background-color: var(--code-bg);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+}
+
+.markdown-preview-container pre code {
+    display: block;
+    padding: 1rem;
+    overflow-x: auto;
+    white-space: pre;
+}
+
 .admin-form {
     background: var(--bg-secondary);
     padding: 2.5rem;
@@ -222,6 +320,24 @@
     gap: 1.5rem;
     color: var(--text-secondary);
     font-size: 0.9rem;
+}
+
+.item-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.edit-btn-inline {
+    color: #4a5568;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: color 0.2s;
+}
+
+.edit-btn-inline:hover {
+    color: var(--accent-primary);
 }
 
 .delete-btn {

@@ -35,7 +35,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 // 🎓 LEARNING: We don't hardcode http://localhost:3000 here because
 // the Vite proxy (vite.config.js) forwards /api/* requests to the backend.
 // In production, the frontend and backend are on the same domain.
-const API_BASE = '/api/auth';
+const API_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/auth` : '/api/auth';
 
 // Create the context object
 const UserAuthContext = createContext();
@@ -54,7 +54,7 @@ export const UserAuthProvider = ({ children }) => {
     // If invalid (expired, tampered), we clear the token.
     // ========================================================================
     useEffect(() => {
-        const token = localStorage.getItem('be_token');
+        const token = localStorage.getItem('be_token') || sessionStorage.getItem('be_admin_token');
         if (token) {
             // Call the backend to verify the token and get user data
             fetch(`${API_BASE}/me`, {
@@ -70,6 +70,7 @@ export const UserAuthProvider = ({ children }) => {
                 .catch(() => {
                     // Token is invalid or expired — clear it
                     localStorage.removeItem('be_token');
+                    sessionStorage.removeItem('be_admin_token');
                     setUser(null);
                 })
                 .finally(() => setLoading(false));
@@ -158,6 +159,7 @@ export const UserAuthProvider = ({ children }) => {
     // ========================================================================
     const logout = () => {
         localStorage.removeItem('be_token');
+        sessionStorage.removeItem('be_admin_token');
         setUser(null);
     };
 

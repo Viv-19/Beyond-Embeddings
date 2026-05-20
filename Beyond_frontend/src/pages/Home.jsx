@@ -26,7 +26,9 @@ const Home = () => {
                             <ArticleCard key={post.id} post={{ ...post, category: 'Blog' }} variant="list" />
                         ))
                     ) : (
-                        <p className="text-muted">No other posts published yet.</p>
+                        <div className="empty-state">
+                            <p className="text-muted">More research insights, evaluations, and logs coming soon.</p>
+                        </div>
                     )}
                 </div>
             </main>

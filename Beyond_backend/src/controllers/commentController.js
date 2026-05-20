@@ -28,7 +28,7 @@ const commentService = require('../services/commentService');
 // ============================================================================
 async function createComment(req, res, next) {
     try {
-        const { postId, text } = req.body;
+        const { postId, text, parentId } = req.body;
         const userId = req.user.id;  // From the JWT token (set by protect middleware)
 
         // --- Input Validation ---
@@ -40,7 +40,7 @@ async function createComment(req, res, next) {
         }
 
         // Delegate to the service layer
-        const comment = await commentService.addComment(postId, userId, text);
+        const comment = await commentService.addComment(postId, userId, text, parentId);
 
         res.status(201).json({
             status: 'success',

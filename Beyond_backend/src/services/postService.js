@@ -68,8 +68,16 @@ async function getPostsByType(type) {
         where: { type },
         orderBy: { created_at: 'desc' },
         include: {
+            comments: {
+                include: {
+                    user: {
+                        select: { username: true, role: true }
+                    }
+                },
+                orderBy: { created_at: 'asc' }
+            },
             _count: {
-                select: { comments: true }  // Include comment count
+                select: { comments: true }
             }
         }
     });
@@ -85,6 +93,14 @@ async function getAllPosts() {
     return await prisma.post.findMany({
         orderBy: { created_at: 'desc' },
         include: {
+            comments: {
+                include: {
+                    user: {
+                        select: { username: true, role: true }
+                    }
+                },
+                orderBy: { created_at: 'asc' }
+            },
             _count: {
                 select: { comments: true }
             }
@@ -142,6 +158,37 @@ async function getPostById(id) {
 }
 
 // ============================================================================
+// updatePost — Updates an existing post
+// ============================================================================
+// @param {string} id — The post database ID
+// @param {object} data — The fields to update
+// ============================================================================
+async function updatePost(id, data) {
+    // Re-generate slug from title if it was changed
+    let slug = data.slug;
+    if (data.title && !data.slug) {
+        slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    }
+
+    return await prisma.post.update({
+        where: { id },
+        data: {
+            title: data.title !== undefined ? data.title : undefined,
+            slug: slug !== undefined ? slug : undefined,
+            subtitle: data.subtitle !== undefined ? data.subtitle : undefined,
+            excerpt: data.excerpt !== undefined ? data.excerpt : undefined,
+            body: data.body !== undefined ? data.body : undefined,
+            image: data.image !== undefined ? data.image : undefined,
+            category: data.category !== undefined ? data.category : undefined,
+            readTime: data.readTime !== undefined ? data.readTime : undefined,
+            repoLink: data.repoLink !== undefined ? data.repoLink : undefined,
+            pdfUrl: data.pdfUrl !== undefined ? data.pdfUrl : undefined,
+            type: data.type !== undefined ? data.type : undefined
+        }
+    });
+}
+
+// ============================================================================
 // deletePost — Deletes a post by its ID
 // ============================================================================
 // 🎓 LEARNING: Because we set `onDelete: Cascade` in the Prisma schema,
@@ -167,7 +214,7 @@ async function deletePost(id) {
 //   - It's safe (no risk of "lost updates" when two users view simultaneously)
 // ============================================================================
 async function incrementMetric(id, metric) {
-    const validMetrics = ['views', 'likes'];
+    const validMetrics = ['views', 'likes', 'dislikes'];
     if (!validMetrics.includes(metric)) {
         throw new Error(`Invalid metric: ${metric}. Must be one of: ${validMetrics.join(', ')}`);
     }
@@ -186,6 +233,7 @@ module.exports = {
     getAllPosts,
     getPostBySlug,
     getPostById,
+    updatePost,
     deletePost,
     incrementMetric
 };

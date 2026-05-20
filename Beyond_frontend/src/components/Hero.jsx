@@ -6,7 +6,7 @@ const Hero = ({ post }) => {
     if (!post) return null;
 
     return (
-        <section className="hero fade-in">
+        <section className={`hero ${post.image ? 'hero-with-image' : ''} fade-in`}>
             <div className="hero-content">
                 <div className="hero-meta">
                     <span className="hero-category">Featured Post</span>
@@ -22,6 +22,11 @@ const Hero = ({ post }) => {
                     <span className="read-time">{post.readTime}</span>
                 </div>
             </div>
+            {post.image && (
+                <div className="hero-image-container">
+                    <img src={post.image} alt={post.title} className="hero-image" />
+                </div>
+            )}
         </section>
     );
 };

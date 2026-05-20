@@ -30,7 +30,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api';
 
 const ContentContext = createContext();
 
@@ -43,6 +43,11 @@ export const ContentProvider = ({ children }) => {
         experiments: [],
         papers: []
     });
+
+    const contentRef = React.useRef(content);
+    useEffect(() => {
+        contentRef.current = content;
+    }, [content]);
 
     // ========================================================================
     // fetchAllContent — Loads content from the backend API
@@ -79,7 +84,15 @@ export const ContentProvider = ({ children }) => {
                         category: post.category || 'Blog',
                         views: post.views || 0,
                         likes: post.likes || 0,
-                        comments: post.comments || [],
+                        dislikes: post.dislikes || 0,
+                        comments: (post.comments || []).map(c => ({
+                            id: c.id,
+                            text: c.text,
+                            author: c.user?.username || 'Researcher',
+                            role: c.user?.role || 'reader',
+                            parent_id: c.parent_id,
+                            created_at: c.created_at
+                        })),
                         commentCount: post._count?.comments || 0
                     };
 
@@ -118,7 +131,7 @@ export const ContentProvider = ({ children }) => {
     const addEntry = useCallback(async (type, entry) => {
         try {
             // Get the admin JWT token from sessionStorage
-            const token = localStorage.getItem('be_admin_token');
+            const token = sessionStorage.getItem('be_admin_token');
 
             const res = await fetch(`${API_BASE}/posts`, {
                 method: 'POST',
@@ -145,6 +158,38 @@ export const ContentProvider = ({ children }) => {
     }, [fetchAllContent]);
 
     // ========================================================================
+    // updateEntry — Updates existing content via the backend API
+    // ========================================================================
+    const updateEntry = useCallback(async (type, id, entry) => {
+        try {
+            const token = sessionStorage.getItem('be_admin_token');
+            const post = contentRef.current[type]?.find(p => p.id === id);
+            const dbId = post?._dbId || id;
+
+            const res = await fetch(`${API_BASE}/posts/${dbId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    type,
+                    ...entry
+                })
+            });
+
+            if (res.ok) {
+                await fetchAllContent();
+            } else {
+                const errData = await res.json();
+                console.error('Failed to update post:', errData.message);
+            }
+        } catch (error) {
+            console.error('Error updating post:', error);
+        }
+    }, [fetchAllContent]);
+
+    // ========================================================================
     // addComment — Posts a comment via the backend API
     // ========================================================================
     // @param {string} type — Content type (used for local state lookup)
@@ -156,13 +201,13 @@ export const ContentProvider = ({ children }) => {
     // determines who is commenting from the JWT token. This prevents users
     // from impersonating others by sending a fake author name.
     // ========================================================================
-    const addComment = useCallback(async (type, postId, commentText, authorName) => {
+    const addComment = useCallback(async (type, postId, commentText, authorName, parentId = null) => {
         try {
-            const token = localStorage.getItem('be_token');
+            const token = localStorage.getItem('be_token') || sessionStorage.getItem('be_admin_token');
 
             // We need the database ID, not the slug
             // Find the post in our local state to get its _dbId
-            const post = content[type]?.find(p => p.id === postId);
+            const post = contentRef.current[type]?.find(p => p.id === postId);
             const dbId = post?._dbId || postId;
 
             const res = await fetch(`${API_BASE}/comments`, {
@@ -173,7 +218,8 @@ export const ContentProvider = ({ children }) => {
                 },
                 body: JSON.stringify({
                     postId: dbId,
-                    text: commentText
+                    text: commentText,
+                    parentId: parentId
                 })
             });
 
@@ -184,7 +230,7 @@ export const ContentProvider = ({ children }) => {
         } catch (error) {
             console.error('Error posting comment:', error);
         }
-    }, [content, fetchAllContent]);
+    }, [fetchAllContent]);
 
     // ========================================================================
     // deleteEntry — Removes content via the backend API
@@ -194,10 +240,10 @@ export const ContentProvider = ({ children }) => {
     // ========================================================================
     const deleteEntry = useCallback(async (type, id) => {
         try {
-            const token = localStorage.getItem('be_admin_token');
+            const token = sessionStorage.getItem('be_admin_token');
 
             // Find the database ID from the slug
-            const post = content[type]?.find(p => p.id === id);
+            const post = contentRef.current[type]?.find(p => p.id === id);
             const dbId = post?._dbId || id;
 
             const res = await fetch(`${API_BASE}/posts/${dbId}`, {
@@ -213,7 +259,7 @@ export const ContentProvider = ({ children }) => {
         } catch (error) {
             console.error('Error deleting post:', error);
         }
-    }, [content, fetchAllContent]);
+    }, [fetchAllContent]);
 
     // ========================================================================
     // incrementMetric — Increment views or likes via the backend API
@@ -237,19 +283,26 @@ export const ContentProvider = ({ children }) => {
 
         // Then sync with the server
         try {
-            const post = content[type]?.find(p => p.id === id);
+            const token = localStorage.getItem('be_token') || sessionStorage.getItem('be_admin_token');
+            const post = contentRef.current[type]?.find(p => p.id === id);
             const dbId = post?._dbId || id;
 
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
             await fetch(`${API_BASE}/posts/${dbId}/${metric}`, {
-                method: 'PATCH'
+                method: 'PATCH',
+                headers
             });
         } catch (error) {
             console.error(`Error incrementing ${metric}:`, error);
         }
-    }, [content]);
+    }, []);
 
     return (
-        <ContentContext.Provider value={{ content, addEntry, addComment, deleteEntry, incrementMetric, refreshContent: fetchAllContent }}>
+        <ContentContext.Provider value={{ content, addEntry, updateEntry, addComment, deleteEntry, incrementMetric, refreshContent: fetchAllContent }}>
             {children}
         </ContentContext.Provider>
     );
