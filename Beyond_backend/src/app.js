@@ -45,7 +45,18 @@ app.use(helmet());
 //    🎓 LEARNING: In production, you'd restrict this to your specific domain:
 //    app.use(cors({ origin: 'https://beyondembeddings.com' }))
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: function (origin, callback) {
+        const allowedOrigins = ['http://localhost:5173', 'http://localhost:3000'];
+        if (process.env.FRONTEND_URL) {
+            // Strip trailing slash if present so it matches the browser Origin header
+            allowedOrigins.push(process.env.FRONTEND_URL.replace(/\/$/, ''));
+        }
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
 
