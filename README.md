@@ -115,8 +115,8 @@ npm run seed
 ```
 
 > **📝 Default Admin Credentials (created by seed):**
-> - Email: `viveshkrsingh19@gmail.com`
-> - Password: `admin123`
+> - Email: 
+> - Password: 
 > - ⚠️ **Change this password after first login!**
 
 ### Step 4: Configure the Frontend
