@@ -20,11 +20,7 @@
 
 const jwt = require('jsonwebtoken');
 
-// Read the JWT secret from environment variables
-// 🎓 LEARNING: The JWT_SECRET is the "password" used to sign and verify tokens.
-// If someone knows your secret, they can forge tokens and impersonate any user.
-// NEVER commit this to Git — it belongs in .env only.
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_dev';
+// We will read the JWT secret from environment variables at call time in the protect middleware.
 
 /**
  * Middleware: Verifies the JWT token in the Authorization header.
@@ -57,7 +53,8 @@ function protect(req, res, next) {
         //   - The token was tampered with (signature mismatch)
         //   - The token has expired (exp claim in the past)
         //   - The token is malformed
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const secret = process.env.JWT_SECRET || 'fallback_secret_for_dev';
+        const decoded = jwt.verify(token, secret);
 
         // 5. Attach the user's ID to the request object
         // Now any route handler after this middleware can access req.user.id

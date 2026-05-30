@@ -20,8 +20,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const prisma = require('../config/db');
 
-// Read JWT secret from environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_dev';
+// We will read the JWT secret from environment variables at call time to avoid timing issues in AWS Lambda.
 
 // ============================================================================
 // registerUser — Creates a new user account
@@ -71,9 +70,10 @@ async function registerUser(username, email, password) {
     // Anyone can decode a JWT and read the payload — but they can't MODIFY it
     // without the secret key. That's why we never put sensitive data (passwords,
     // credit cards) in the payload.
+    const secret = process.env.JWT_SECRET || 'fallback_secret_for_dev';
     const token = jwt.sign(
         { userId: user.id, role: user.role },
-        JWT_SECRET,
+        secret,
         { expiresIn: '1d' } // Token expires in 1 day
     );
 
@@ -123,9 +123,10 @@ async function loginUser(email, password) {
     }
 
     // 3. Generate JWT token
+    const secret = process.env.JWT_SECRET || 'fallback_secret_for_dev';
     const token = jwt.sign(
         { userId: user.id, role: user.role },
-        JWT_SECRET,
+        secret,
         { expiresIn: '1d' }
     );
 
