@@ -12,6 +12,7 @@
 // ============================================================================
 
 const prisma = require('../config/db');
+const { sendNewPostNotification } = require('./emailService');
 
 // ============================================================================
 // createPost — Creates a new post of any type
@@ -48,6 +49,13 @@ async function createPost(type, data) {
             pdfUrl: data.pdfUrl || null,
         }
     });
+
+    // 🎓 LEARNING: Fire-and-forget email notification for blog posts.
+    // We don't `await` this because we don't want email failures to
+    // prevent the post from being created. The email sends in the background.
+    if (type === 'blogs' && post.title) {
+        sendNewPostNotification(post);
+    }
 
     return post;
 }

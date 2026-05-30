@@ -37,16 +37,31 @@ const ContentContext = createContext();
 export const ContentProvider = ({ children }) => {
     // --- State: Organized by content type ---
     // Each type maps to an array of post objects from the database
-    const [content, setContent] = useState({
-        blogs: [],
-        notes: [],
-        experiments: [],
-        papers: []
+    const [isLoading, setIsLoading] = useState(true);
+    const [content, setContent] = useState(() => {
+        // 1. Check if we have cached content in localStorage
+        const cached = localStorage.getItem('be_content_cache');
+        if (cached) {
+            try {
+                return JSON.parse(cached);
+            } catch (e) {
+                console.error("Failed to parse cached content");
+            }
+        }
+        // Default empty state
+        return {
+            blogs: [],
+            notes: [],
+            experiments: [],
+            papers: []
+        };
     });
 
     const contentRef = React.useRef(content);
     useEffect(() => {
         contentRef.current = content;
+        // 2. Cache content to localStorage whenever it changes
+        localStorage.setItem('be_content_cache', JSON.stringify(content));
     }, [content]);
 
     // ========================================================================
@@ -59,6 +74,10 @@ export const ContentProvider = ({ children }) => {
     // ========================================================================
     const fetchAllContent = useCallback(async () => {
         try {
+            // Set loading true only if we don't have cache (so UI doesn't blink if we have cache)
+            if (!localStorage.getItem('be_content_cache')) {
+                setIsLoading(true);
+            }
             const res = await fetch(`${API_BASE}/posts`);
             const data = await res.json();
 
@@ -105,6 +124,8 @@ export const ContentProvider = ({ children }) => {
             }
         } catch (error) {
             console.error('Failed to fetch content:', error);
+        } finally {
+            setIsLoading(false);
         }
     }, []);
 
@@ -302,7 +323,7 @@ export const ContentProvider = ({ children }) => {
     }, []);
 
     return (
-        <ContentContext.Provider value={{ content, addEntry, updateEntry, addComment, deleteEntry, incrementMetric, refreshContent: fetchAllContent }}>
+        <ContentContext.Provider value={{ content, isLoading, addEntry, updateEntry, addComment, deleteEntry, incrementMetric, refreshContent: fetchAllContent }}>
             {children}
         </ContentContext.Provider>
     );

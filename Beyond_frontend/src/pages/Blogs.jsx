@@ -1,10 +1,11 @@
 import React from 'react';
 import { useContent } from '../context/ContentContext';
 import ArticleCard from '../components/ArticleCard';
+import SkeletonCard from '../components/SkeletonCard';
 import './Blogs.css';
 
 const Blogs = () => {
-    const { content } = useContent();
+    const { content, isLoading } = useContent();
     const blogs = content.blogs || [];
 
     return (
@@ -14,7 +15,13 @@ const Blogs = () => {
             </header>
 
             <div className="blogs-vertical-list">
-                {blogs.length === 0 ? (
+                {isLoading && blogs.length === 0 ? (
+                    <>
+                        <SkeletonCard />
+                        <SkeletonCard />
+                        <SkeletonCard />
+                    </>
+                ) : blogs.length === 0 ? (
                     <div className="empty-state">
                         <p className="text-muted">No blog posts yet. Visit the Admin panel to start writing.</p>
                     </div>

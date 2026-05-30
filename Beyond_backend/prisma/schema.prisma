@@ -15,7 +15,8 @@
 
 // --- Generator: tells Prisma what kind of client code to produce ---
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 // --- Datasource: tells Prisma which database engine and connection string to use ---
@@ -48,6 +49,7 @@ model User {
   // --- Relationships ---
   // A User can write many Comments (1-to-many)
   comments      Comment[]
+  siteVisits    SiteVisit[]
 }
 
 // ============================================================================
@@ -113,5 +115,23 @@ model Comment {
   parent    Comment?  @relation("CommentReplies", fields: [parent_id], references: [id], onDelete: Cascade)
   replies   Comment[] @relation("CommentReplies")
 
+  created_at DateTime @default(now())
+}
+
+// ============================================================================
+// SITE VISIT MODEL
+// ============================================================================
+// Tracks every page visit for the analytics dashboard.
+// Each row represents one page view by one visitor.
+//
+// 🎓 LEARNING: We store the page path (e.g. "/", "/post/my-blog") so the
+// admin can see which pages are most popular. The user_id is optional because
+// anonymous visitors (not logged in) also contribute to traffic.
+// ============================================================================
+model SiteVisit {
+  id         String   @id @default(uuid())
+  path       String                              // The URL path visited (e.g. "/", "/blogs")
+  user_id    String?                             // Optional — null for anonymous visitors
+  user       User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
   created_at DateTime @default(now())
 }

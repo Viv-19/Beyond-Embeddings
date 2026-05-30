@@ -105,11 +105,13 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 const authRoutes = require('./routes/authRoutes');
 const postRoutes = require('./routes/postRoutes');
 const commentRoutes = require('./routes/commentRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 
 // Mount route modules at their respective URL prefixes
 app.use('/api/auth', authRoutes);         // POST /api/auth/signup, /api/auth/login
 app.use('/api/posts', postRoutes);        // GET /api/posts, POST /api/posts, etc.
 app.use('/api/comments', commentRoutes);  // POST /api/comments, etc.
+app.use('/api/analytics', analyticsRoutes); // POST /api/analytics/visit, GET /api/analytics/stats
 
 // ============================================================================
 // HEALTH CHECK ENDPOINT

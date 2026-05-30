@@ -1,11 +1,12 @@
 import React from 'react';
 import Hero from '../components/Hero';
 import ArticleCard from '../components/ArticleCard';
+import SkeletonCard from '../components/SkeletonCard';
 import { useContent } from '../context/ContentContext';
 import './Home.css';
 
 const Home = () => {
-    const { content } = useContent();
+    const { content, isLoading } = useContent();
     const allPosts = content.blogs || [];
 
     const featuredPost = allPosts[0];
@@ -13,7 +14,11 @@ const Home = () => {
 
     return (
         <div className="home-page fade-in">
-            <Hero post={featuredPost} />
+            {isLoading && allPosts.length === 0 ? (
+                <SkeletonCard variant="hero" />
+            ) : (
+                <Hero post={featuredPost} />
+            )}
 
             <main className="container">
                 <div className="section-header">
@@ -21,7 +26,13 @@ const Home = () => {
                 </div>
 
                 <div className="publications-list">
-                    {remainingPosts.length > 0 ? (
+                    {isLoading && remainingPosts.length === 0 ? (
+                        <>
+                            <SkeletonCard />
+                            <SkeletonCard />
+                            <SkeletonCard />
+                        </>
+                    ) : remainingPosts.length > 0 ? (
                         remainingPosts.map(post => (
                             <ArticleCard key={post.id} post={{ ...post, category: 'Blog' }} variant="list" />
                         ))

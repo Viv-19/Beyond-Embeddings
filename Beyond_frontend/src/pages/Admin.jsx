@@ -21,7 +21,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useContent } from '../context/ContentContext';
-import { Plus, Trash2, BookOpen, FileText, FlaskConical, ScrollText, Lock, LogOut, Code, FileDown, MessageCircle, Edit, Eye, Edit2 } from 'lucide-react';
+import { Plus, Trash2, BookOpen, FileText, FlaskConical, ScrollText, Lock, LogOut, Code, FileDown, MessageCircle, Edit, Eye, Edit2, BarChart3 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -220,7 +221,12 @@ const convertGoogleDriveLink = (url) => {
             <header className="admin-header">
                 <div className="admin-header-main">
                     <h1>CMS - {tabs.find(t => t.id === activeTab).name}</h1>
-                    <button onClick={handleLogout} className="logout-btn"><LogOut size={18} /> Logout</button>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                        <Link to="/analytics" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                            <BarChart3 size={16} /> View Analytics
+                        </Link>
+                        <button onClick={handleLogout} className="logout-btn"><LogOut size={18} /> Logout</button>
+                    </div>
                 </div>
             </header>
 
